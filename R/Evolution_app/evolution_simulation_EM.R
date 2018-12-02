@@ -22,22 +22,30 @@ ui <- fluidPage(
                   max = 40,
                   value = 40),
       actionButton(inputId = "gen_pop", 
-                   label = "Generate population")
+                   label = "Generate population"),
+      hr(),
+      
+      textInput(inputId = "HT",label = "Heads or tails?",value = NULL),
+      numericInput(inputId = "cell_pick",value = NULL,label = "Cell pick"),
+      actionButton(inputId = "update_pop",label = "Update population")
+      
     ),
+    
     mainPanel(
-      plotOutput("testplot")
-              )
+      plotOutput("testplot"),
+      verbatimTextOutput("test_ht")
+    )
   )
   
- 
+  
   # verbatimTextOutput("text")
 )
 
 server <- function(input, output) {
   
-
   
-  # regenerate plot
+  
+  # (re)generate plot
   observeEvent(input$gen_pop, {
     cells <- isolate({input$cells})
     cell_size <- isolate({input$cell_size})
@@ -56,8 +64,21 @@ server <- function(input, output) {
     population_structure_df$x_pos <- rad * cos(population_structure_df$angle*pi/180)  
     population_structure_df$y_pos <- rad * sin(population_structure_df$angle*pi/180)  
     
-    output$testplot <- renderPlot({ggplot(data = population_structure_df, aes(x=x_pos,y=y_pos)) + geom_point(aes(color=color_reps),size=cell_size) + theme_no_axes() + coord_cartesian(xlim = c(-1,1),ylim=c(-1,1)) + scale_color_discrete(name="Cell type")
+    output$testplot <- renderPlot({ggplot(data = population_structure_df, aes(x=x_pos,y=y_pos)) + 
+        geom_point(aes(color=color_reps),size=cell_size) + 
+        theme_no_axes() + 
+        coord_cartesian(xlim = c(-1,1),ylim=c(-1,1)) + 
+        scale_color_discrete(name="Cell type")
+      
+      
     })
+  })
+  
+  # update population
+  observeEvent(input$update_pop, {
+    cell_pick <- isolate({input$cell_pick})
+    HT <- isolate({input$HT})
+    output$test_ht <- renderText(HT)
   })
   
   
