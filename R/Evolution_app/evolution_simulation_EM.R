@@ -70,7 +70,7 @@ server <- function(input, output) {
                                                rate=1)
     population_structure_df$data[population_structure_df$data=="mutant","rate"] <- relative_div_rate
     
-    population_structure_df$data[,"angle"] <- seq(90,360+90,length.out = nrow(population_structure_df$data)+1)[1:nrow( population_structure_df$data)]
+    population_structure_df$data[,"angle"] <- rev(seq(120,360+120,length.out = nrow(population_structure_df$data)+1)[1:nrow( population_structure_df$data)])
     
     population_structure_df$data[,"x_pos"] <- rad * cos(population_structure_df$data[,"angle"]*pi/180)  
     population_structure_df$data[,"y_pos"] <- rad * sin(population_structure_df$data[,"angle"]*pi/180)  
@@ -171,6 +171,9 @@ server <- function(input, output) {
       arrow_start_y <- population_structure_df$data[cell_pick,"y_pos"]
       arrow_end_y <- population_structure_df$data[cell_replace,"y_pos"]
       
+      # Sys.sleep(0.25)
+      
+      
       output$testplot <- renderPlot({ggplot(data = population_structure_df$data, aes(x=x_pos,y=y_pos)) + 
           geom_point(aes(fill=color_reps),size=cell_size,shape=21,stroke=2) + 
           geom_point(data=population_structure_df$data[c(cell_pick,cell_replace),],
@@ -183,7 +186,8 @@ server <- function(input, output) {
                        color="black",size=1,arrow = arrow(length = unit(0.3, "inches"))) + 
           theme_no_axes() + 
           coord_cartesian(xlim = c(-1,1),ylim=c(-1,1)) + 
-          scale_fill_manual(name="Cell type",values=cols)
+          scale_fill_manual(name="Cell type",values=cols,drop=F)
+
         
         })
       
