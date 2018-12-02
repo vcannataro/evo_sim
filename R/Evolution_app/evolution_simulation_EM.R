@@ -1,6 +1,8 @@
 library(shiny)
+# library(scales)
 
 cols <- c("wild type" = "blue", "mutant" = "red")
+cols_pop_curve <- c("Current"="black","Previous"="gray50")
 
 ui <- fluidPage(
   
@@ -27,8 +29,8 @@ ui <- fluidPage(
                    label = "Generate population"),
       hr(),
       
-      textInput(inputId = "HT",label = "Heads or tails?",value = NULL),
-      numericInput(inputId = "cell_pick",value = NULL,label = "Cell pick"),
+      textInput(inputId = "HT",label = "Heads or tails?",value = "H"),
+      numericInput(inputId = "cell_pick",value = 1,label = "Cell pick"),
       actionButton(inputId = "update_pop",label = "Update population"),
       
       hr(),
@@ -41,9 +43,11 @@ ui <- fluidPage(
     ),
     
     mainPanel(
-      plotOutput("testplot"),
-      dataTableOutput("pop_df"),
-      plotOutput("population_over_time")
+      tabsetPanel(
+        tabPanel("Population",plotOutput("testplot")),
+        # dataTableOutput("pop_df"),
+        tabPanel("Growth curves over time",plotOutput("population_over_time"))
+      )
     )
   )
   
@@ -58,7 +62,7 @@ server <- function(input, output,session) {
   populations_over_time <- reactiveValues(data=data.frame(population=rep(NA,1e4),
                                                           time=rep(NA,1e4),
                                                           proportion_mut=rep(NA,1e4),
-                                                          current_pop=F))
+                                                          current_pop="Previous"))
   
   generation_number <- reactiveValues(num=0)
   
@@ -72,7 +76,7 @@ server <- function(input, output,session) {
     
     population_number <- isolate({input$gen_pop})
     
-    populations_over_time$data[,"current_pop"] <- F
+    populations_over_time$data[,"current_pop"] <- "Previous"
     
     cells <- isolate({input$cells})
     cell_size <- isolate({input$cell_size})
@@ -100,32 +104,37 @@ server <- function(input, output,session) {
       
       # return(population_structure_df)
       
-
+      
       
       
     })
     
     populations_over_time$data[which(is.na(populations_over_time$data[,1]))[1],
-                               c("population","time","proportion_mut","current_pop")] <- c(population_number,generation_number$num,length(which(population_structure_df$data[,"color_reps"]=="mutant"))/nrow(population_structure_df$data),T)
+                               c("population","time","proportion_mut","current_pop")] <- c(population_number,generation_number$num,length(which(population_structure_df$data[,"color_reps"]=="mutant"))/nrow(population_structure_df$data),"Current")
     
   })
   
   
   # population_over_time_plot
   output$population_over_time <- renderPlot({
-    ggplot(data=populations_over_time$data,
-           aes(x=time, 
-               y = proportion_mut,
+    
+    ggplot(data=populations_over_time$data[which(!is.na(populations_over_time$data[,1])),],
+           aes(x=as.numeric(time), 
+               y = as.numeric(proportion_mut),
                group=population,
-               color=as.factor(current_pop))) + 
-      geom_line() + 
+               color=(current_pop))) + 
+      geom_line(lwd=2) + 
       theme_classic() + 
       labs(x="Time",y="Proportion mutant") + 
-      scale_color_discrete(name="Populations")
+      scale_color_manual(name="Populations",values = cols_pop_curve) + 
+      theme(axis.text = element_text(size=30),
+            axis.title = element_text(size=30)) + 
+      scale_y_continuous(breaks=c(0,0.25,0.5,0.75,1),labels=c(0,0.25,0.5,0.75,1),
+                       expand = c(0,0),limits=c(0,1.1)) 
     
     
-
-    })
+    
+  })
   
   # output$pop_df <- renderDataTable({populations_over_time$data})
   
@@ -177,11 +186,11 @@ server <- function(input, output,session) {
     output$test_ht <- renderDataTable({population_structure_df$data})
     
     populations_over_time$data[which(is.na(populations_over_time$data[,1]))[1],
-                               c("population","time","proportion_mut","current_pop")] <- c(population_number,generation_number$num,length(which(population_structure_df$data[,"color_reps"]=="mutant"))/nrow(population_structure_df$data),T)
+                               c("population","time","proportion_mut","current_pop")] <- c(population_number,generation_number$num,length(which(population_structure_df$data[,"color_reps"]=="mutant"))/nrow(population_structure_df$data),"Current")
     
   })
   
-
+  
   # progress one step ---- 
   observeEvent(input$one_step, {
     
@@ -192,6 +201,68 @@ server <- function(input, output,session) {
     cell_size <- isolate({input$cell_size})
     
     # loop until extinction/fixation
+    
+    cell_pick <- sample(x = 1:cells,size = 1,prob = population_structure_df$data[,"rate"])
+    HT <- sample(x = c("H","T"),size = 1)
+    
+    
+    if(HT=="H") {
+      cell_replace <- if(cell_pick>1){cell_pick - 1}else{cells} # if value == 1, pick largest value 
+      population_structure_df$data[cell_replace,c("color_reps","rate")] <-  population_structure_df$data[cell_pick,c("color_reps","rate")] 
+    }
+    if(HT=="T") {
+      
+      cell_replace <- if(cell_pick<cells){cell_pick+1}else{1}
+      
+      population_structure_df$data[cell_replace,c("color_reps","rate")] <-  population_structure_df$data[cell_pick,c("color_reps","rate")] 
+    }
+    
+    arrow_start_x <- population_structure_df$data[cell_pick,"x_pos"]
+    arrow_end_x <- population_structure_df$data[cell_replace,"x_pos"]
+    arrow_start_y <- population_structure_df$data[cell_pick,"y_pos"]
+    arrow_end_y <- population_structure_df$data[cell_replace,"y_pos"]
+    
+    # Sys.sleep(0.25)
+    
+    
+    output$testplot <- renderPlot({
+      
+      
+      
+      ggplot(data = population_structure_df$data, aes(x=x_pos,y=y_pos)) + 
+        geom_point(aes(fill=color_reps),size=cell_size,shape=21,stroke=2) + 
+        geom_point(data=population_structure_df$data[c(cell_pick,cell_replace),],
+                   aes(x=x_pos,y=y_pos,fill=color_reps),
+                   color="yellow",shape=21,stroke=2,size=cell_size) + 
+        geom_segment(aes(x=arrow_start_x,
+                         xend=arrow_end_x,
+                         y=arrow_start_y,
+                         yend=arrow_end_y),
+                     color="black",size=1,arrow = arrow(length = unit(0.3, "inches"))) + 
+        theme_no_axes() + 
+        coord_cartesian(xlim = c(-1,1),ylim=c(-1,1)) + 
+        scale_fill_manual(name="Cell type",values=cols,drop=F) 
+      # labs(title=sprintf("Round %i", rv$i))
+      
+      
+      
+    })
+    
+    populations_over_time$data[which(is.na(populations_over_time$data[,1]))[1],
+                               c("population","time","proportion_mut","current_pop")] <- c(population_number,generation_number$num,length(which(population_structure_df$data[,"color_reps"]=="mutant"))/nrow(population_structure_df$data),"Current")
+    
+  })
+  
+  # fast forward -----
+  observeEvent(input$take_it_away, {
+    population_number <- isolate({input$gen_pop})
+    cells <- isolate({input$cells})
+    cell_size <- isolate({input$cell_size})
+    
+    # loop until extinction/fixation
+    while(length(unique(population_structure_df$data[,"color_reps"]))>1){
+      
+      generation_number$num <- generation_number$num + 1
       
       cell_pick <- sample(x = 1:cells,size = 1,prob = population_structure_df$data[,"rate"])
       HT <- sample(x = c("H","T"),size = 1)
@@ -235,80 +306,18 @@ server <- function(input, output,session) {
           scale_fill_manual(name="Cell type",values=cols,drop=F) 
         # labs(title=sprintf("Round %i", rv$i))
         
-      
         
       })
       
       populations_over_time$data[which(is.na(populations_over_time$data[,1]))[1],
-                                 c("population","time","proportion_mut","current_pop")] <- c(population_number,generation_number$num,length(which(population_structure_df$data[,"color_reps"]=="mutant"))/nrow(population_structure_df$data),T)
-    
-  })
-  
-  # fast forward -----
-  observeEvent(input$take_it_away, {
-    population_number <- isolate({input$gen_pop})
-    cells <- isolate({input$cells})
-    cell_size <- isolate({input$cell_size})
-    
-    # loop until extinction/fixation
-    while(length(unique(population_structure_df$data[,"color_reps"]))>1){
-      
-      generation_number$num <- generation_number$num + 1
-      
-      cell_pick <- sample(x = 1:cells,size = 1,prob = population_structure_df$data[,"rate"])
-      HT <- sample(x = c("H","T"),size = 1)
-      
-      
-      if(HT=="H") {
-        cell_replace <- if(cell_pick>1){cell_pick - 1}else{cells} # if value == 1, pick largest value 
-        population_structure_df$data[cell_replace,c("color_reps","rate")] <-  population_structure_df$data[cell_pick,c("color_reps","rate")] 
-      }
-      if(HT=="T") {
-        
-        cell_replace <- if(cell_pick<cells){cell_pick+1}else{1}
-        
-        population_structure_df$data[cell_replace,c("color_reps","rate")] <-  population_structure_df$data[cell_pick,c("color_reps","rate")] 
-      }
-      
-      arrow_start_x <- population_structure_df$data[cell_pick,"x_pos"]
-      arrow_end_x <- population_structure_df$data[cell_replace,"x_pos"]
-      arrow_start_y <- population_structure_df$data[cell_pick,"y_pos"]
-      arrow_end_y <- population_structure_df$data[cell_replace,"y_pos"]
-      
-      # Sys.sleep(0.25)
-      
-      
-      output$testplot <- renderPlot({
-          
-          
-          
-          ggplot(data = population_structure_df$data, aes(x=x_pos,y=y_pos)) + 
-            geom_point(aes(fill=color_reps),size=cell_size,shape=21,stroke=2) + 
-            geom_point(data=population_structure_df$data[c(cell_pick,cell_replace),],
-                       aes(x=x_pos,y=y_pos,fill=color_reps),
-                       color="yellow",shape=21,stroke=2,size=cell_size) + 
-            geom_segment(aes(x=arrow_start_x,
-                             xend=arrow_end_x,
-                             y=arrow_start_y,
-                             yend=arrow_end_y),
-                         color="black",size=1,arrow = arrow(length = unit(0.3, "inches"))) + 
-            theme_no_axes() + 
-            coord_cartesian(xlim = c(-1,1),ylim=c(-1,1)) + 
-            scale_fill_manual(name="Cell type",values=cols,drop=F) 
-            # labs(title=sprintf("Round %i", rv$i))
-       
-        
-      })
-      
-      populations_over_time$data[which(is.na(populations_over_time$data[,1]))[1],
-                                 c("population","time","proportion_mut","current_pop")] <- c(population_number,generation_number$num,length(which(population_structure_df$data[,"color_reps"]=="mutant"))/nrow(population_structure_df$data),T)
+                                 c("population","time","proportion_mut","current_pop")] <- c(population_number,generation_number$num,length(which(population_structure_df$data[,"color_reps"]=="mutant"))/nrow(population_structure_df$data),"Current")
       
     }
     
   })
   
   # eventReactive({})  
-
+  
   
   
 }
