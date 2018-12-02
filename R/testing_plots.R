@@ -24,6 +24,6 @@ population_structure_df$angle <- seq(90,360+90,length.out = nrow(population_stru
 population_structure_df$x_pos <- rad * cos(population_structure_df$angle*pi/180)  
 population_structure_df$y_pos <- rad * sin(population_structure_df$angle*pi/180)  
 
-ggplot(data = population_structure_df, aes(x=x_pos,y=y_pos)) + geom_point(aes(color=color_reps),size=cell_size) + theme_no_axes() + coord_cartesian(xlim = c(-1,1),ylim=c(-1,1)) + scale_color_discrete(name="Cell type")
+ggplot(data = population_structure_df, aes(x=x_pos,y=y_pos)) + geom_point(aes(fill=color_reps),size=cell_size,shape=21,stroke=2) + theme_no_axes() + coord_cartesian(xlim = c(-1,1),ylim=c(-1,1)) + scale_color_discrete(name="Cell type")
 
 
