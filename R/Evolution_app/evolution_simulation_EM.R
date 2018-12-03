@@ -16,12 +16,12 @@ ui <- fluidPage(
       tabsetPanel(
       tabPanel("Manual",
       sliderInput("cells",
-                  "Number of cells:",
+                  "Number of individuals:",
                   min = 1,
                   max = 50,
                   value = 6),
       sliderInput("cell_size",
-                  "Cell size:",
+                  "Individual size:",
                   min = 1,
                   max = 40,
                   value = 40),
@@ -54,8 +54,8 @@ ui <- fluidPage(
       tabsetPanel(
         tabPanel("Population",plotOutput("testplot")),
         # dataTableOutput("pop_df"),
-        tabPanel("Growth curves over time",plotOutput("population_over_time")),
-        tabPanel("Mutant win percent", plotOutput("percent_mutant_win"))
+        tabPanel("Variation over time",plotOutput("population_over_time")),
+        tabPanel("Mutant survival percent", plotOutput("percent_mutant_win"))
         # tabPanel("mutant test",dataTableOutput("mutant_test"))
       )
     )
@@ -114,7 +114,8 @@ server <- function(input, output,session) {
         theme_no_axes() + 
         coord_cartesian(xlim = c(-1,1),ylim=c(-1,1)) + 
         scale_fill_manual(name="Cell type",values=cols) + 
-        geom_text(aes(label=cell_number),size=max(c(cell_size-10,1))) 
+        geom_text(aes(label=cell_number),size=max(c(cell_size-10,1)))+ 
+        theme(legend.text=element_text(size=30),legend.title=element_text(size=30))
       
       # return(population_structure_df)
       
@@ -148,7 +149,7 @@ server <- function(input, output,session) {
       theme(axis.text = element_text(size=30),
             axis.title = element_text(size=30)) + 
       scale_y_continuous(breaks=c(0,0.25,0.5,0.75,1),labels=c(0,0.25,0.5,0.75,1),
-                         expand = c(0,0),limits=c(0,1.1)) 
+                         expand = c(0,0),limits=c(0,1.1)) + guides(color=F,alpha=F)
     
     
     
@@ -164,7 +165,7 @@ server <- function(input, output,session) {
       geom_hline(yintercept = isolate({input$mutant_number})/isolate({input$cells})) + 
       theme_classic() + 
       scale_y_continuous(limits = c(0,1.1*100),expand = c(0,0),breaks = c(0,0.25,0.5,0.75,1)*100) + 
-      labs(y="Mutant survives (%)",x="Experiment number") + 
+      labs(y="Running average \n mutant survives (%)",x="Experiment number") + 
       theme(axis.text = element_text(size=30),
             axis.title = element_text(size=30))
     
@@ -221,7 +222,7 @@ server <- function(input, output,session) {
                      color="black",size=1,arrow = arrow(length = unit(0.3, "inches"))) + 
         theme_no_axes() + 
         coord_cartesian(xlim = c(-1,1),ylim=c(-1,1)) + 
-        scale_fill_manual(name="Cell type",values=cols,drop=F) 
+        scale_fill_manual(name="Cell type",values=cols,drop=F)  + theme(legend.text=element_text(size=30),legend.title=element_text(size=30))
     })
     
     output$test_ht <- renderDataTable({population_structure_df$data})
@@ -288,7 +289,7 @@ server <- function(input, output,session) {
                      color="black",size=1,arrow = arrow(length = unit(0.3, "inches"))) + 
         theme_no_axes() + 
         coord_cartesian(xlim = c(-1,1),ylim=c(-1,1)) + 
-        scale_fill_manual(name="Cell type",values=cols,drop=F) 
+        scale_fill_manual(name="Cell type",values=cols,drop=F) + theme(legend.text=element_text(size=30),legend.title=element_text(size=30))
       # labs(title=sprintf("Round %i", rv$i))
       
       
@@ -355,7 +356,7 @@ server <- function(input, output,session) {
                        color="black",size=1,arrow = arrow(length = unit(0.3, "inches"))) + 
           theme_no_axes() + 
           coord_cartesian(xlim = c(-1,1),ylim=c(-1,1)) + 
-          scale_fill_manual(name="Cell type",values=cols,drop=F) 
+          scale_fill_manual(name="Cell type",values=cols,drop=F) + theme(legend.text=element_text(size=30),legend.title=element_text(size=30))
         # labs(title=sprintf("Round %i", rv$i))
         
         
@@ -408,7 +409,7 @@ server <- function(input, output,session) {
           theme_no_axes() + 
           coord_cartesian(xlim = c(-1,1),ylim=c(-1,1)) + 
           scale_fill_manual(name="Cell type",values=cols) + 
-          geom_text(aes(label=cell_number),size=max(c(cell_size-10,1))) 
+          geom_text(aes(label=cell_number),size=max(c(cell_size-10,1))) + theme(legend.text=element_text(size=30),legend.title=element_text(size=30))
         
         # return(population_structure_df)
         
@@ -471,7 +472,7 @@ server <- function(input, output,session) {
                          color="black",size=1,arrow = arrow(length = unit(0.3, "inches"))) + 
             theme_no_axes() + 
             coord_cartesian(xlim = c(-1,1),ylim=c(-1,1)) + 
-            scale_fill_manual(name="Cell type",values=cols,drop=F) 
+            scale_fill_manual(name="Cell type",values=cols,drop=F) + theme(legend.text=element_text(size=30),legend.title=element_text(size=30))
           # labs(title=sprintf("Round %i", rv$i))
           
           
