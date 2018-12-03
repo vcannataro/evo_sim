@@ -55,7 +55,8 @@ ui <- fluidPage(
         tabPanel("Population",plotOutput("testplot")),
         # dataTableOutput("pop_df"),
         tabPanel("Variation over time",plotOutput("population_over_time")),
-        tabPanel("Mutant survival percent", plotOutput("percent_mutant_win"))
+        tabPanel("Mutant survival percent", plotOutput("percent_mutant_win"),
+                 actionButton(inputId = "include_starting_N",label = "Include starting mutant proportion"))
         # tabPanel("mutant test",dataTableOutput("mutant_test"))
       )
     )
@@ -80,6 +81,8 @@ server <- function(input, output,session) {
   mutant_wins_prop <- reactiveValues(data=NULL)
   
   population_number_rv <- reactiveValues(num=0)
+  
+  
   
   # (re)generate data ---- 
   observeEvent(input$gen_pop, {
@@ -157,18 +160,32 @@ server <- function(input, output,session) {
   
   # percent mutant wins plot ---- 
   output$percent_mutant_win <- renderPlot({
+    
+    if(input$include_starting_N %% 2 == 0){
     mutant_wins_df <- data.frame(Experiments=1:length(mutant_wins_prop$data),
                                  Mutant_win_prop = mutant_wins_prop$data)
     ggplot(data=mutant_wins_df,
            aes(x=as.numeric(Experiments),y = as.numeric(Mutant_win_prop)*100)) + 
       geom_line(lwd=2) + 
-      geom_hline(yintercept = isolate({input$mutant_number})/isolate({input$cells})) + 
+      # geom_hline(yintercept = isolate({input$mutant_number})/isolate({input$cells})) + 
       theme_classic() + 
       scale_y_continuous(limits = c(0,1.1*100),expand = c(0,0),breaks = c(0,0.25,0.5,0.75,1)*100) + 
       labs(y="Running average \n mutant survives (%)",x="Experiment number") + 
       theme(axis.text = element_text(size=30),
             axis.title = element_text(size=30))
-    
+    }else{
+      mutant_wins_df <- data.frame(Experiments=1:length(mutant_wins_prop$data),
+                                   Mutant_win_prop = mutant_wins_prop$data)
+      ggplot(data=mutant_wins_df,
+             aes(x=as.numeric(Experiments),y = as.numeric(Mutant_win_prop)*100)) + 
+        geom_line(lwd=2) + 
+        geom_hline(yintercept = isolate({input$mutant_number})*100/isolate({input$cells})) + 
+        theme_classic() + 
+        scale_y_continuous(limits = c(0,1.1*100),expand = c(0,0),breaks = c(0,0.25,0.5,0.75,1)*100) + 
+        labs(y="Running average \n mutant survives (%)",x="Experiment number") + 
+        theme(axis.text = element_text(size=30),
+              axis.title = element_text(size=30))
+    }
     
   })
   
@@ -404,19 +421,19 @@ server <- function(input, output,session) {
       population_structure_df$data[,"y_pos"] <- rad * sin(population_structure_df$data[,"angle"]*pi/180)  
       population_structure_df$data[,"cell_number"] <- 1:nrow(population_structure_df$data)
       
-      output$testplot <- renderPlot({ggplot(data = population_structure_df$data, aes(x=x_pos,y=y_pos)) + 
-          geom_point(aes(fill=color_reps),size=cell_size,shape=21,stroke=2) + 
-          theme_no_axes() + 
-          coord_cartesian(xlim = c(-1,1),ylim=c(-1,1)) + 
-          scale_fill_manual(name="Cell type",values=cols) + 
-          geom_text(aes(label=cell_number),size=max(c(cell_size-10,1))) + theme(legend.text=element_text(size=30),legend.title=element_text(size=30))
+      # output$testplot <- renderPlot({ggplot(data = population_structure_df$data, aes(x=x_pos,y=y_pos)) + 
+      #     geom_point(aes(fill=color_reps),size=cell_size,shape=21,stroke=2) + 
+      #     theme_no_axes() + 
+      #     coord_cartesian(xlim = c(-1,1),ylim=c(-1,1)) + 
+      #     scale_fill_manual(name="Cell type",values=cols) + 
+      #     geom_text(aes(label=cell_number),size=max(c(cell_size-10,1))) + theme(legend.text=element_text(size=30),legend.title=element_text(size=30))
         
         # return(population_structure_df)
         
         
         
         
-      })
+      # })
       
       populations_over_time$data[which(is.na(populations_over_time$data[,1]))[1],
                                  c("population","time","proportion_mut","current_pop")] <- c(isolate({population_number_rv$num}),generation_number$num,length(which(population_structure_df$data[,"color_reps"]=="mutant"))/nrow(population_structure_df$data),"Current")
@@ -424,10 +441,10 @@ server <- function(input, output,session) {
       
       
       
-      # population_number <- population_number_rv$num
-      cells <- isolate({input$cells})
-      cell_size <- isolate({input$cell_size})
-      
+      # # population_number <- population_number_rv$num
+      # cells <- isolate({input$cells})
+      # cell_size <- isolate({input$cell_size})
+      # 
       # loop until extinction/fixation
       while(length(unique(population_structure_df$data[,"color_reps"]))>1){
         
@@ -440,43 +457,19 @@ server <- function(input, output,session) {
         if(HT=="H") {
           cell_replace <- if(cell_pick>1){cell_pick - 1}else{cells} # if value == 1, pick largest value 
           population_structure_df$data[cell_replace,c("color_reps","rate")] <-  population_structure_df$data[cell_pick,c("color_reps","rate")] 
-        }
-        if(HT=="T") {
+        }else{
           
           cell_replace <- if(cell_pick<cells){cell_pick+1}else{1}
           
           population_structure_df$data[cell_replace,c("color_reps","rate")] <-  population_structure_df$data[cell_pick,c("color_reps","rate")] 
         }
         
-        arrow_start_x <- population_structure_df$data[cell_pick,"x_pos"]
-        arrow_end_x <- population_structure_df$data[cell_replace,"x_pos"]
-        arrow_start_y <- population_structure_df$data[cell_pick,"y_pos"]
-        arrow_end_y <- population_structure_df$data[cell_replace,"y_pos"]
+       
         
         # Sys.sleep(0.25)
         
         
-        output$testplot <- renderPlot({
-          
-          
-          
-          ggplot(data = population_structure_df$data, aes(x=x_pos,y=y_pos)) + 
-            geom_point(aes(fill=color_reps),size=cell_size,shape=21,stroke=2) + 
-            geom_point(data=population_structure_df$data[c(cell_pick,cell_replace),],
-                       aes(x=x_pos,y=y_pos,fill=color_reps),
-                       color="yellow",shape=21,stroke=2,size=cell_size) + 
-            geom_segment(aes(x=arrow_start_x,
-                             xend=arrow_end_x,
-                             y=arrow_start_y,
-                             yend=arrow_end_y),
-                         color="black",size=1,arrow = arrow(length = unit(0.3, "inches"))) + 
-            theme_no_axes() + 
-            coord_cartesian(xlim = c(-1,1),ylim=c(-1,1)) + 
-            scale_fill_manual(name="Cell type",values=cols,drop=F) + theme(legend.text=element_text(size=30),legend.title=element_text(size=30))
-          # labs(title=sprintf("Round %i", rv$i))
-          
-          
-        })
+
         
         populations_over_time$data[which(is.na(populations_over_time$data[,1]))[1],
                                    c("population","time","proportion_mut","current_pop")] <- c(isolate({population_number_rv$num}),generation_number$num,length(which(population_structure_df$data[,"color_reps"]=="mutant"))/nrow(population_structure_df$data),"Current")
@@ -491,6 +484,31 @@ server <- function(input, output,session) {
       
       
     }
+    
+    output$testplot <- renderPlot({
+      
+      arrow_start_x <- population_structure_df$data[cell_pick,"x_pos"]
+      arrow_end_x <- population_structure_df$data[cell_replace,"x_pos"]
+      arrow_start_y <- population_structure_df$data[cell_pick,"y_pos"]
+      arrow_end_y <- population_structure_df$data[cell_replace,"y_pos"]
+      
+      ggplot(data = population_structure_df$data, aes(x=x_pos,y=y_pos)) + 
+        geom_point(aes(fill=color_reps),size=cell_size,shape=21,stroke=2) + 
+        geom_point(data=population_structure_df$data[c(cell_pick,cell_replace),],
+                   aes(x=x_pos,y=y_pos,fill=color_reps),
+                   color="yellow",shape=21,stroke=2,size=cell_size) + 
+        geom_segment(aes(x=arrow_start_x,
+                         xend=arrow_end_x,
+                         y=arrow_start_y,
+                         yend=arrow_end_y),
+                     color="black",size=1,arrow = arrow(length = unit(0.3, "inches"))) + 
+        theme_no_axes() + 
+        coord_cartesian(xlim = c(-1,1),ylim=c(-1,1)) + 
+        scale_fill_manual(name="Cell type",values=cols,drop=F) + theme(legend.text=element_text(size=30),legend.title=element_text(size=30))
+      # labs(title=sprintf("Round %i", rv$i))
+      
+      
+    })
     
   })
   
