@@ -132,7 +132,7 @@ server <- function(input, output,session) {
   })
   
   
-  # population_over_time_plot
+  # population_over_time_plot ----- 
   output$population_over_time <- renderPlot({
     
     ggplot(data=populations_over_time$data[which(!is.na(populations_over_time$data[,1])),],
@@ -144,7 +144,7 @@ server <- function(input, output,session) {
       theme_classic() + 
       labs(x="Time",y="Proportion mutant") + 
       scale_color_manual(name="Populations",values = cols_pop_curve) + 
-      scale_alpha_manual(values=c("Current"="1","Previous"="0.5")) +  
+      scale_alpha_manual(values=c("Current"="1","Previous"="0.25")) +  
       theme(axis.text = element_text(size=30),
             axis.title = element_text(size=30)) + 
       scale_y_continuous(breaks=c(0,0.25,0.5,0.75,1),labels=c(0,0.25,0.5,0.75,1),
@@ -154,16 +154,19 @@ server <- function(input, output,session) {
     
   })
   
-  # percent mutant wins
+  # percent mutant wins plot ---- 
   output$percent_mutant_win <- renderPlot({
     mutant_wins_df <- data.frame(Experiments=1:length(mutant_wins_prop$data),
                                  Mutant_win_prop = mutant_wins_prop$data)
     ggplot(data=mutant_wins_df,
-           aes(x=as.numeric(Experiments),y = as.numeric(Mutant_win_prop))) + 
+           aes(x=as.numeric(Experiments),y = as.numeric(Mutant_win_prop)*100)) + 
       geom_line(lwd=2) + 
       geom_hline(yintercept = isolate({input$mutant_number})/isolate({input$cells})) + 
       theme_classic() + 
-      scale_y_continuous(limits = c(0,1),expand = c(0,0),breaks = c(0,0.25,0.5,0.75,1))
+      scale_y_continuous(limits = c(0,1.1*100),expand = c(0,0),breaks = c(0,0.25,0.5,0.75,1)*100) + 
+      labs(y="Mutant survives (%)",x="Experiment number") + 
+      theme(axis.text = element_text(size=30),
+            axis.title = element_text(size=30))
     
     
   })
