@@ -29,6 +29,7 @@ ui <- fluidPage(
                    label = "Number of starting mutants",value = 1,min = 1),
       numericInput(inputId = "mutant_rel_div",
                    label = "Relative division rate of mutant",value = 1,min = 0),
+      checkboxInput("heredity_checkbox", "Heredity", value = TRUE),
       actionButton(inputId = "gen_pop", 
                    label = "Generate population"),
       hr(),
@@ -213,13 +214,13 @@ server <- function(input, output,session) {
     
     if(HT=="H") {
       cell_replace <- if(cell_pick>1){cell_pick - 1}else{cells} # if value == 1, pick largest value 
-      population_structure_df$data[cell_replace,c("color_reps","rate")] <-  population_structure_df$data[cell_pick,c("color_reps","rate")] 
+      if(input$heredity_checkbox){population_structure_df$data[cell_replace,c("color_reps","rate")] <-  population_structure_df$data[cell_pick,c("color_reps","rate")] }
     }
     if(HT=="T") {
       
       cell_replace <- if(cell_pick<cells){cell_pick+1}else{1}
       
-      population_structure_df$data[cell_replace,c("color_reps","rate")] <-  population_structure_df$data[cell_pick,c("color_reps","rate")] 
+     if(input$heredity_checkbox){ population_structure_df$data[cell_replace,c("color_reps","rate")] <-  population_structure_df$data[cell_pick,c("color_reps","rate")] }
     }
     
     arrow_start_x <- population_structure_df$data[cell_pick,"x_pos"]
@@ -273,13 +274,13 @@ server <- function(input, output,session) {
     
     if(HT=="H") {
       cell_replace <- if(cell_pick>1){cell_pick - 1}else{cells} # if value == 1, pick largest value 
-      population_structure_df$data[cell_replace,c("color_reps","rate")] <-  population_structure_df$data[cell_pick,c("color_reps","rate")] 
+     if(input$heredity_checkbox){ population_structure_df$data[cell_replace,c("color_reps","rate")] <-  population_structure_df$data[cell_pick,c("color_reps","rate")] }
     }
     if(HT=="T") {
       
       cell_replace <- if(cell_pick<cells){cell_pick+1}else{1}
       
-      population_structure_df$data[cell_replace,c("color_reps","rate")] <-  population_structure_df$data[cell_pick,c("color_reps","rate")] 
+     if(input$heredity_checkbox){ population_structure_df$data[cell_replace,c("color_reps","rate")] <-  population_structure_df$data[cell_pick,c("color_reps","rate")] }
     }
     
     arrow_start_x <- population_structure_df$data[cell_pick,"x_pos"]
@@ -340,13 +341,13 @@ server <- function(input, output,session) {
       
       if(HT=="H") {
         cell_replace <- if(cell_pick>1){cell_pick - 1}else{cells} # if value == 1, pick largest value 
-        population_structure_df$data[cell_replace,c("color_reps","rate")] <-  population_structure_df$data[cell_pick,c("color_reps","rate")] 
+       if(input$heredity_checkbox){ population_structure_df$data[cell_replace,c("color_reps","rate")] <-  population_structure_df$data[cell_pick,c("color_reps","rate")] }
       }
       if(HT=="T") {
         
         cell_replace <- if(cell_pick<cells){cell_pick+1}else{1}
         
-        population_structure_df$data[cell_replace,c("color_reps","rate")] <-  population_structure_df$data[cell_pick,c("color_reps","rate")] 
+        if(input$heredity_checkbox){ population_structure_df$data[cell_replace,c("color_reps","rate")] <-  population_structure_df$data[cell_pick,c("color_reps","rate")] }
       }
       
       arrow_start_x <- population_structure_df$data[cell_pick,"x_pos"]
@@ -456,12 +457,12 @@ server <- function(input, output,session) {
         
         if(HT=="H") {
           cell_replace <- if(cell_pick>1){cell_pick - 1}else{cells} # if value == 1, pick largest value 
-          population_structure_df$data[cell_replace,c("color_reps","rate")] <-  population_structure_df$data[cell_pick,c("color_reps","rate")] 
+          if(input$heredity_checkbox){population_structure_df$data[cell_replace,c("color_reps","rate")] <-  population_structure_df$data[cell_pick,c("color_reps","rate")] }
         }else{
           
           cell_replace <- if(cell_pick<cells){cell_pick+1}else{1}
           
-          population_structure_df$data[cell_replace,c("color_reps","rate")] <-  population_structure_df$data[cell_pick,c("color_reps","rate")] 
+          if(input$heredity_checkbox){population_structure_df$data[cell_replace,c("color_reps","rate")] <-  population_structure_df$data[cell_pick,c("color_reps","rate")] }
         }
         
        
