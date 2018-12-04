@@ -1,5 +1,7 @@
 library(shiny)
-# library(scales)
+library(ggplot2)
+library(ggforce)
+library(scales)
 
 cols <- c("wild type" = "blue", "mutant" = "red")
 cols_pop_curve <- c("Current"="black","Previous"="gray60")
@@ -40,7 +42,8 @@ ui <- fluidPage(
       ),
       tabPanel("Auto",
       
-      
+               actionButton(inputId = "gen_pop2", 
+                            label = "Generate population"),
       actionButton(inputId = "one_step",label = "Progress one step"),
       actionButton(inputId = "take_it_away",label = "Fast forward"),
       hr(),
@@ -72,8 +75,8 @@ server <- function(input, output,session) {
   population_structure_df <- reactiveValues(data=NULL)
   
   populations_over_time <- reactiveValues(data=data.frame(population=rep(NA,1e4),
-                                                          time=rep(NA,1e4),
-                                                          proportion_mut=rep(NA,1e4),
+                                                          time=NA,
+                                                          proportion_mut=NA,
                                                           current_pop="Previous"))
   
   generation_number <- reactiveValues(num=0)
@@ -86,7 +89,7 @@ server <- function(input, output,session) {
   
   
   # (re)generate data ---- 
-  observeEvent(input$gen_pop, {
+  observeEvent(c(input$gen_pop,input$gen_pop2),ignoreInit = T, {
     
     generation_number$num <- 1
     
@@ -147,13 +150,14 @@ server <- function(input, output,session) {
                color=(current_pop),alpha=current_pop)) + 
       geom_line(lwd=2) + 
       theme_classic() + 
-      labs(x="Time",y="Proportion mutant") + 
+      labs(x="Cell division events",y="Proportion mutant") + 
       scale_color_manual(name="Populations",values = cols_pop_curve) + 
       scale_alpha_manual(values=c("Current"="1","Previous"="0.25")) +  
       theme(axis.text = element_text(size=30),
             axis.title = element_text(size=30)) + 
       scale_y_continuous(breaks=c(0,0.25,0.5,0.75,1),labels=c(0,0.25,0.5,0.75,1),
-                         expand = c(0,0),limits=c(0,1.1)) + guides(color=F,alpha=F)
+                         expand = c(0,0),limits=c(0,1.1)) + guides(color=F,alpha=F) + 
+      scale_x_continuous(breaks=pretty_breaks())
     
     
     
