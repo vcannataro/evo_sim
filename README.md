@@ -1,7 +1,7 @@
 # evo_sim
 
 Made a simulation of a birth-death process, similar to evolution at 
-the base of intestinal crypts, to 
+the base of intestinal crypts (https://doi.org/10.1111/eva.12361), to 
   1) demonstrate some relevant evolution-in-action and 
   2) learn shiny.
   
